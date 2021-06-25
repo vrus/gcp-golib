@@ -1,0 +1,19 @@
+**/.DS_Store
+HELP.md
+target/
+lib/
+out/
+bin/
+build/
+!**/src/main/**
+!**/src/test/**
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### VS Code ###
+.vscode/
+*.go.bak
