@@ -274,7 +274,11 @@ func (f *FirebaseAuth) ResetPasswordLink(email string) (string, error) {
 // CheckUserExists
 func (f *FirebaseAuth) CheckUserExists(email string) (bool, error) {
 	if user, err := f.client.GetUserByEmail(context.Background(), email); err != nil {
-		return false, err
+		if strings.Contains(err.Error(), "no user exists") {
+			return false, nil
+		} else {
+			return false, err
+		}
 	} else {
 		if user == nil {
 			return false, nil
