@@ -121,7 +121,8 @@ func (f *FirebaseAuth) Login(email string, password string) (*FBLoginResp, error
 	}
 
 	if status != 200 {
-		return nil, fmt.Errorf("failed to authenticate with firebase: Http Status %v", status)
+		//return nil, fmt.Errorf("failed to authenticate with firebase: Http Status %v", status)
+		return nil, err
 	}
 
 	var auth FBLoginResp
