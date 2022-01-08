@@ -70,6 +70,15 @@ type FBLoginResp struct {
 	ExpiresIn    string `json:"expiresIn"`
 }
 
+type FBLoginError struct {
+	Error FBError `json:"error"`
+}
+
+type FBError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 type FBRefreshTokenResp struct {
 	UID          string `json:"user_id"`
 	ProjectID    string `json:"project_id"`
@@ -104,7 +113,7 @@ func NewFirebaseAuth(apiKey string) (*FirebaseAuth, error) {
 }
 
 // Login
-func (f *FirebaseAuth) Login(email string, password string) (*FBLoginResp, error) {
+func (f *FirebaseAuth) Login(email string, password string) (*FBLoginResp, *FBLoginError) {
 	req, err := json.Marshal(map[string]interface{}{
 		"email":             email,
 		"password":          password,
@@ -112,24 +121,40 @@ func (f *FirebaseAuth) Login(email string, password string) (*FBLoginResp, error
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, &FBLoginError{Error: FBError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}}
 	}
 
 	resp, status, err := submitPost(baseURL, "/accounts:signInWithPassword?key="+f.apiKey, req)
 	if err != nil {
-		return nil, err
+		return nil, &FBLoginError{Error: FBError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}}
 	}
 
 	if status != 200 {
-		//return nil, fmt.Errorf("failed to authenticate with firebase: Http Status %v", status)
-		return nil, err
+		var loginError FBLoginError
+
+		if err = json.Unmarshal(resp, &loginError); err != nil {
+			return nil, &FBLoginError{Error: FBError{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}}
+		}
+
+		return nil, &loginError
 	}
 
 	var auth FBLoginResp
-	err = json.Unmarshal(resp, &auth)
 
-	if err != nil {
-		return nil, err
+	if err = json.Unmarshal(resp, &auth); err != nil {
+		return nil, &FBLoginError{Error: FBError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}}
 	}
 
 	return &auth, nil
