@@ -314,6 +314,10 @@ func (f *FirebaseAuth) CheckUserExists(email string) (bool, error) {
 	return true, nil
 }
 
+func (f *FirebaseAuth) VerifyToken(idToken string) (*auth.Token, error) {
+	return f.client.VerifyIDToken(context.Background(), idToken)
+}
+
 // submitPost
 func submitPost(baseURL string, path string, data []byte) ([]byte, int, error) {
 	resp, err := http.Post(baseURL+path, contentTypeJSON, bytes.NewBuffer(data))
