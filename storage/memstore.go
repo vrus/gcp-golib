@@ -200,21 +200,20 @@ func (m *MemStore) GetIntSet(key string) ([]int, bool) {
 	conn := m.pool.Get()
 	defer conn.Close()
 
-	vals, err := redis.Ints(conn.Do("SMEMBERS", key))
-	if err != nil {
+	if val, err := redis.Ints(conn.Do("SMEMBERS", key)); err != nil {
 		return nil, false
 	} else {
-		return vals, true
+		return val, true
 	}
 }
 
 // AddIntToSet
-func (m *MemStore) AddIntToSet(key string, val int) bool {
+func (m *MemStore) AddIntToSet(key string, val ...int) bool {
 	conn := m.pool.Get()
 	defer conn.Close()
 
-	val, err := redis.Int(conn.Do("SADD", key, val))
-	if err != nil {
+	// return value is number of items added to set
+	if _, err := redis.Int(conn.Do("SADD", key, val)); err != nil {
 		return false
 	} else {
 		return true
