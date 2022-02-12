@@ -64,6 +64,18 @@ func (f *FileStore) DownloadFile(bucket string, filename string) ([]byte, error)
 	return data, nil
 }
 
+// DeleteFile
+func (f *FileStore) DeleteFile(bucket string, filename string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*50)
+	defer cancel()
+
+	if err := f.client.Bucket(bucket).Object(filename).Delete(ctx); err != nil {
+		return fmt.Errorf("Object(%q).Delete: %v", filename, err)
+	}
+
+	return nil
+}
+
 // Close
 func (f *FileStore) Close() {
 	f.client.Close()
