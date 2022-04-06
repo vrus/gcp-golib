@@ -148,16 +148,16 @@ func (f *FirebaseAuth) Login(email string, password string) (*FBLoginResp, *FBLo
 		return nil, &loginError
 	}
 
-	var auth FBLoginResp
+	var fbLoginResp FBLoginResp
 
-	if err = json.Unmarshal(resp, &auth); err != nil {
+	if err = json.Unmarshal(resp, &fbLoginResp); err != nil {
 		return nil, &FBLoginError{Error: FBError{
 			Code:    http.StatusInternalServerError,
 			Message: err.Error(),
 		}}
 	}
 
-	return &auth, nil
+	return &fbLoginResp, nil
 }
 
 // RefreshToken
@@ -250,9 +250,7 @@ func (f *FirebaseAuth) UpdateUser(uid string, email string, pwd string, name str
 		PhotoURL(avatar).
 		Disabled(disabled)
 
-	_, err := f.client.UpdateUser(context.Background(), uid, params)
-
-	if err != nil {
+	if _, err := f.client.UpdateUser(context.Background(), uid, params); err != nil {
 		return err
 	}
 
@@ -264,9 +262,7 @@ func (f *FirebaseAuth) UpdateUserEmail(uid string, email string) error {
 	params := (&auth.UserToUpdate{}).
 		Email(email)
 
-	_, err := f.client.UpdateUser(context.Background(), uid, params)
-
-	if err != nil {
+	if _, err := f.client.UpdateUser(context.Background(), uid, params); err != nil {
 		return err
 	}
 
@@ -278,9 +274,18 @@ func (f *FirebaseAuth) UpdateUserPassword(uid string, password string) error {
 	params := (&auth.UserToUpdate{}).
 		Password(password)
 
-	_, err := f.client.UpdateUser(context.Background(), uid, params)
+	if _, err := f.client.UpdateUser(context.Background(), uid, params); err != nil {
+		return err
+	}
 
-	if err != nil {
+	return nil
+}
+
+func (f *FirebaseAuth) UpdateUserDisabled(uid string, disabled bool) error {
+	params := (&auth.UserToUpdate{}).
+		Disabled(disabled)
+
+	if _, err := f.client.UpdateUser(context.Background(), uid, params); err != nil {
 		return err
 	}
 
