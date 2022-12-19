@@ -53,7 +53,7 @@ func (f *FileStore) DownloadFile(bucket string, filename string) ([]byte, error)
 
 	rc, err := f.client.Bucket(bucket).Object(filename).NewReader(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Object(%q).NewReader: %v", filename, err)
+		return nil, fmt.Errorf("Object(%s).NewReader: %v", filename, err)
 	}
 	defer rc.Close()
 
@@ -70,7 +70,7 @@ func (f *FileStore) DeleteFile(bucket string, filename string) error {
 	defer cancel()
 
 	if err := f.client.Bucket(bucket).Object(filename).Delete(ctx); err != nil {
-		return fmt.Errorf("Object(%q).Delete: %v", filename, err)
+		return fmt.Errorf("Object(%s).Delete: %v", filename, err)
 	}
 
 	return nil
