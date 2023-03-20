@@ -53,7 +53,7 @@ func (f *FileStore) DownloadFile(bucket string, filename string) ([]byte, error)
 
 	rc, err := f.client.Bucket(bucket).Object(filename).NewReader(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Object(%q).NewReader: %v", filename, err)
+		return nil, fmt.Errorf("Object(%s).NewReader: %v", filename, err)
 	}
 	defer rc.Close()
 
@@ -62,6 +62,18 @@ func (f *FileStore) DownloadFile(bucket string, filename string) ([]byte, error)
 		return nil, fmt.Errorf("ioutil.ReadAll: %v", err)
 	}
 	return data, nil
+}
+
+// DeleteFile
+func (f *FileStore) DeleteFile(bucket string, filename string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*50)
+	defer cancel()
+
+	if err := f.client.Bucket(bucket).Object(filename).Delete(ctx); err != nil {
+		return fmt.Errorf("Object(%s).Delete: %v", filename, err)
+	}
+
+	return nil
 }
 
 // Close

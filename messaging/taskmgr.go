@@ -41,6 +41,10 @@ func (t *TaskMgr) CreateTask(queueID string, data []byte, handler string) (*task
 	// Build the Task queue path.
 	queuePath := fmt.Sprintf("projects/%s/locations/%s/queues/%s", t.projectID, t.locationID, queueID)
 
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+
 	// Build the Task payload.
 	// https://godoc.org/google.golang.org/genproto/googleapis/cloud/tasks/v2#CreateTaskRequest
 	req := &taskspb.CreateTaskRequest{
@@ -50,6 +54,7 @@ func (t *TaskMgr) CreateTask(queueID string, data []byte, handler string) (*task
 			MessageType: &taskspb.Task_AppEngineHttpRequest{
 				AppEngineHttpRequest: &taskspb.AppEngineHttpRequest{
 					HttpMethod:  taskspb.HttpMethod_POST,
+					Headers:     headers,
 					RelativeUri: handler,
 				},
 			},

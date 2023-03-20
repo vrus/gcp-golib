@@ -49,11 +49,12 @@ func NewPublisher(projectID string, topics []string) (*Publisher, error) {
 }
 
 // PublishMessage will take a set of bytes and publish the message to the specified topic
-func (s *Publisher) PublishMessage(topic string, data []byte) error {
+func (s *Publisher) PublishMessage(topic string, data []byte, attrs map[string]string) error {
 	// Fetch the PubSub Topic pointer from the map
 	if t, ok := s.topics[topic]; ok {
 		res := t.Publish(s.ctx, &pubsub.Message{
-			Data: data,
+			Data:       data,
+			Attributes: attrs,
 		})
 
 		if _, err := res.Get(s.ctx); err != nil {

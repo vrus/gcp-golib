@@ -70,6 +70,15 @@ type FBLoginResp struct {
 	ExpiresIn    string `json:"expiresIn"`
 }
 
+type FBLoginError struct {
+	Error FBError `json:"error"`
+}
+
+type FBError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 type FBRefreshTokenResp struct {
 	UID          string `json:"user_id"`
 	ProjectID    string `json:"project_id"`
@@ -104,7 +113,7 @@ func NewFirebaseAuth(apiKey string) (*FirebaseAuth, error) {
 }
 
 // Login
-func (f *FirebaseAuth) Login(email string, password string) (*FBLoginResp, error) {
+func (f *FirebaseAuth) Login(email string, password string) (*FBLoginResp, *FBLoginError) {
 	req, err := json.Marshal(map[string]interface{}{
 		"email":             email,
 		"password":          password,
@@ -112,26 +121,43 @@ func (f *FirebaseAuth) Login(email string, password string) (*FBLoginResp, error
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, &FBLoginError{Error: FBError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}}
 	}
 
 	resp, status, err := submitPost(baseURL, "/accounts:signInWithPassword?key="+f.apiKey, req)
 	if err != nil {
-		return nil, err
+		return nil, &FBLoginError{Error: FBError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}}
 	}
 
 	if status != 200 {
-		return nil, fmt.Errorf("failed to authenticate with firebase: Http Status %v", status)
+		var loginError FBLoginError
+
+		if err = json.Unmarshal(resp, &loginError); err != nil {
+			return nil, &FBLoginError{Error: FBError{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}}
+		}
+
+		return nil, &loginError
 	}
 
-	var auth FBLoginResp
-	err = json.Unmarshal(resp, &auth)
+	var fbLoginResp FBLoginResp
 
-	if err != nil {
-		return nil, err
+	if err = json.Unmarshal(resp, &fbLoginResp); err != nil {
+		return nil, &FBLoginError{Error: FBError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}}
 	}
 
-	return &auth, nil
+	return &fbLoginResp, nil
 }
 
 // RefreshToken
@@ -224,9 +250,7 @@ func (f *FirebaseAuth) UpdateUser(uid string, email string, pwd string, name str
 		PhotoURL(avatar).
 		Disabled(disabled)
 
-	_, err := f.client.UpdateUser(context.Background(), uid, params)
-
-	if err != nil {
+	if _, err := f.client.UpdateUser(context.Background(), uid, params); err != nil {
 		return err
 	}
 
@@ -238,9 +262,7 @@ func (f *FirebaseAuth) UpdateUserEmail(uid string, email string) error {
 	params := (&auth.UserToUpdate{}).
 		Email(email)
 
-	_, err := f.client.UpdateUser(context.Background(), uid, params)
-
-	if err != nil {
+	if _, err := f.client.UpdateUser(context.Background(), uid, params); err != nil {
 		return err
 	}
 
@@ -252,9 +274,18 @@ func (f *FirebaseAuth) UpdateUserPassword(uid string, password string) error {
 	params := (&auth.UserToUpdate{}).
 		Password(password)
 
-	_, err := f.client.UpdateUser(context.Background(), uid, params)
+	if _, err := f.client.UpdateUser(context.Background(), uid, params); err != nil {
+		return err
+	}
 
-	if err != nil {
+	return nil
+}
+
+func (f *FirebaseAuth) UpdateUserDisabled(uid string, disabled bool) error {
+	params := (&auth.UserToUpdate{}).
+		Disabled(disabled)
+
+	if _, err := f.client.UpdateUser(context.Background(), uid, params); err != nil {
 		return err
 	}
 
@@ -274,7 +305,11 @@ func (f *FirebaseAuth) ResetPasswordLink(email string) (string, error) {
 // CheckUserExists
 func (f *FirebaseAuth) CheckUserExists(email string) (bool, error) {
 	if user, err := f.client.GetUserByEmail(context.Background(), email); err != nil {
-		return false, err
+		if strings.Contains(err.Error(), "no user exists") {
+			return false, nil
+		} else {
+			return false, err
+		}
 	} else {
 		if user == nil {
 			return false, nil
@@ -282,6 +317,10 @@ func (f *FirebaseAuth) CheckUserExists(email string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (f *FirebaseAuth) VerifyToken(idToken string) (*auth.Token, error) {
+	return f.client.VerifyIDToken(context.Background(), idToken)
 }
 
 // submitPost
