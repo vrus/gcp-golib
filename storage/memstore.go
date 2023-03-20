@@ -241,3 +241,14 @@ func (m *MemStore) IsStringInSet(key string, val string) bool {
 		return true
 	}
 }
+
+func (m *MemStore) RemoveStringsFromSet(key string, val ...string) bool {
+	conn := m.pool.Get()
+	defer conn.Close()
+
+	if affected, err := redis.Int(conn.Do("SREM", key, val)); err != nil || affected == 0 {
+		return false
+	} else {
+		return true
+	}
+}
