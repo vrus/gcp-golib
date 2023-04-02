@@ -323,6 +323,14 @@ func (f *FirebaseAuth) VerifyToken(idToken string) (*auth.Token, error) {
 	return f.client.VerifyIDToken(context.Background(), idToken)
 }
 
+func (f *FirebaseAuth) CreateToken(uid string, claims map[string]interface{}) (string, error) {
+	if claims == nil {
+		return f.client.CustomToken(context.Background(), uid)
+	} else {
+		return f.client.CustomTokenWithClaims(context.Background(), uid, claims)
+	}
+}
+
 // submitPost
 func submitPost(baseURL string, path string, data []byte) ([]byte, int, error) {
 	resp, err := http.Post(baseURL+path, contentTypeJSON, bytes.NewBuffer(data))
