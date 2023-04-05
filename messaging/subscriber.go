@@ -8,9 +8,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"runtime"
 	"sync"
+	"time"
 
 	"cloud.google.com/go/pubsub"
+)
+
+const (
+	AckDeadline = 60 * time.Second
 )
 
 // Subscriber exposes the functionality behind the Google Pub/Sub
@@ -29,23 +35,44 @@ func NewSubscriber(projectID string, topic string) (*Subscriber, error) {
 		return nil, err
 	}
 
-	sub := client.Subscription(topic)
-	sub.ReceiveSettings.Synchronous = false
-	// number of goroutines sub.Receive will spawn to pull messages concurrently.
-	//sub.ReceiveSettings.NumGoroutines = runtime.NumCPU()
+	return &Subscriber{
+		client: client,
+		stop:   false,
+	}, nil
+}
+
+func (s *Subscriber) Subscribe(topic string, sync bool, maxOutstanding int) {
+	sub := s.client.Subscription(topic)
+	sub.ReceiveSettings.Synchronous = sync
+	sub.ReceiveSettings.NumGoroutines = runtime.NumCPU()
 
 	// This is only guaranteed when ReceiveSettings.Synchronous is set to true.
 	// When Synchronous is set to false, the StreamingPull RPC is used which
 	// can pull a single large batch of messages at once that is greater than
 	// MaxOutstandingMessages before pausing. For more info, see
 	// https://cloud.google.com/pubsub/docs/pull#streamingpull_dealing_with_large_backlogs_of_small_messages.
-	//sub.ReceiveSettings.MaxOutstandingMessages = 20
+	//sub.ReceiveSettings.MaxOutstandingMessages = 10
+	sub.ReceiveSettings.MaxOutstandingMessages = maxOutstanding
 
-	return &Subscriber{
-		client: client,
-		sub:    sub,
-		stop:   false,
-	}, nil
+	// keep reference to currently subscribed topic
+	s.sub = sub
+}
+
+// CreateSubscription will create and use the subscription
+func (s *Subscriber) CreateSubscription(name string, topic string) error {
+	topicRef := s.client.Topic(topic)
+
+	sub, err := s.client.CreateSubscription(context.Background(), name, pubsub.SubscriptionConfig{
+		Topic:       topicRef,
+		AckDeadline: AckDeadline,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	s.sub = sub
+	return nil
 }
 
 // Start begins the receive cycle of messages. f will receive the callback with the message details to process
