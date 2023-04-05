@@ -41,9 +41,8 @@ func NewSubscriber(projectID string, topic string) (*Subscriber, error) {
 	}, nil
 }
 
-func (s *Subscriber) Subscribe(topic string, sync bool, maxOutstanding int) {
+func (s *Subscriber) Subscribe(topic string, maxOutstanding int) {
 	sub := s.client.Subscription(topic)
-	sub.ReceiveSettings.Synchronous = sync
 	sub.ReceiveSettings.NumGoroutines = runtime.NumCPU()
 
 	// This is only guaranteed when ReceiveSettings.Synchronous is set to true.
