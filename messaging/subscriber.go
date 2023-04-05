@@ -59,12 +59,18 @@ func (s *Subscriber) Subscribe(topic string, sync bool, maxOutstanding int) {
 }
 
 // CreateSubscription will create and use the subscription
-func (s *Subscriber) CreateSubscription(name string, topic string) error {
+func (s *Subscriber) CreateSubscription(name string, topic string, expireDays int) error {
 	topicRef := s.client.Topic(topic)
+	expiration := 24 * time.Hour // minimum expiration allowed is 1 day
+
+	if expireDays > 1 {
+		expiration = time.Duration(24*expireDays) * time.Hour // minimum expiration allowed is 1 day
+	}
 
 	sub, err := s.client.CreateSubscription(context.Background(), name, pubsub.SubscriptionConfig{
-		Topic:       topicRef,
-		AckDeadline: AckDeadline,
+		Topic:            topicRef,
+		AckDeadline:      AckDeadline,
+		ExpirationPolicy: expiration,
 	})
 
 	if err != nil {
