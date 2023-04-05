@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
-	taskspb "google.golang.org/genproto/googleapis/cloud/tasks/v2"
+	taskspb "cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 )
 
 type TaskMgr struct {
@@ -73,5 +73,5 @@ func (t *TaskMgr) CreateTask(queueID string, data []byte, handler string) (*task
 
 // Close
 func (t *TaskMgr) Close() {
-	t.client.Close()
+	_ := t.client.Close()
 }
