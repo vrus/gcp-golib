@@ -36,11 +36,8 @@ func NewTaskMgr(projectID string, locationID string) (*TaskMgr, error) {
 	}, nil
 }
 
-// CreateTask
+// CreateTask submits tasks to AppEngine endpoints
 func (t *TaskMgr) CreateTask(queueID string, data []byte, handler string) (*taskspb.Task, error) {
-	// Build the Task queue path.
-	queuePath := fmt.Sprintf("projects/%s/locations/%s/queues/%s", t.projectID, t.locationID, queueID)
-
 	headers := map[string]string{
 		"Content-Type": "application/json",
 	}
@@ -48,7 +45,7 @@ func (t *TaskMgr) CreateTask(queueID string, data []byte, handler string) (*task
 	// Build the Task payload.
 	// https://godoc.org/google.golang.org/genproto/googleapis/cloud/tasks/v2#CreateTaskRequest
 	req := &taskspb.CreateTaskRequest{
-		Parent: queuePath,
+		Parent: fmt.Sprintf("projects/%s/locations/%s/queues/%s", t.projectID, t.locationID, queueID),
 		Task: &taskspb.Task{
 			// https://godoc.org/google.golang.org/genproto/googleapis/cloud/tasks/v2#AppEngineHttpRequest
 			MessageType: &taskspb.Task_AppEngineHttpRequest{
@@ -62,6 +59,42 @@ func (t *TaskMgr) CreateTask(queueID string, data []byte, handler string) (*task
 	}
 
 	req.Task.GetAppEngineHttpRequest().Body = data
+	task, err := t.client.CreateTask(t.ctx, req)
+
+	if err != nil {
+		return nil, fmt.Errorf("CreateTask: %v", err)
+	}
+
+	return task, nil
+}
+
+func (t *TaskMgr) CreateTaskHttp(queueID string, data []byte, handler string, serviceAccount string) (*taskspb.Task, error) {
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+
+	// Build the Task payload.
+	// https://godoc.org/google.golang.org/genproto/googleapis/cloud/tasks/v2#CreateTaskRequest
+	req := &taskspb.CreateTaskRequest{
+		Parent: fmt.Sprintf("projects/%s/locations/%s/queues/%s", t.projectID, t.locationID, queueID),
+		Task: &taskspb.Task{
+			// https://godoc.org/google.golang.org/genproto/googleapis/cloud/tasks/v2#HttpRequest
+			MessageType: &taskspb.Task_HttpRequest{
+				HttpRequest: &taskspb.HttpRequest{
+					HttpMethod: taskspb.HttpMethod_POST,
+					Headers:    headers,
+					Url:        handler,
+					AuthorizationHeader: &taskspb.HttpRequest_OidcToken{
+						OidcToken: &taskspb.OidcToken{
+							ServiceAccountEmail: serviceAccount,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	req.Task.GetHttpRequest().Body = data
 	task, err := t.client.CreateTask(t.ctx, req)
 
 	if err != nil {
