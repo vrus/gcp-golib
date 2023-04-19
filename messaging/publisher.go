@@ -5,10 +5,11 @@
 package messaging
 
 import (
+	"cloud.google.com/go/pubsub"
 	"context"
 	"fmt"
-
-	"cloud.google.com/go/pubsub"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 type Publisher struct {
@@ -58,6 +59,44 @@ func (s *Publisher) PublishMessage(topic string, data []byte, attrs map[string]s
 		})
 
 		if _, err := res.Get(s.ctx); err != nil {
+			return fmt.Errorf("publish result: %v", err)
+		}
+
+		return nil
+	}
+
+	return fmt.Errorf("invalid Topic specified: %v", topic)
+}
+
+func (s *Publisher) PublishProtoMessage(topic string, data proto.Message, attrs map[string]string) error {
+	// Fetch the PubSub Topic pointer from the map
+	if t, ok := s.topics[topic]; ok {
+		cfg, err := t.Config(context.Background())
+		if err != nil {
+			return fmt.Errorf("topic.Config err: %v", err)
+		}
+		encoding := cfg.SchemaSettings.Encoding
+
+		var msg []byte
+		switch encoding {
+		case pubsub.EncodingBinary:
+			if msg, err = proto.Marshal(data); err != nil {
+				return fmt.Errorf("proto.Marshal err: %v", err)
+			}
+		case pubsub.EncodingJSON:
+			if msg, err = protojson.Marshal(data); err != nil {
+				return fmt.Errorf("protojson.Marshal err: %v", err)
+			}
+		default:
+			return fmt.Errorf("invalid encoding: %v", encoding)
+		}
+
+		res := t.Publish(s.ctx, &pubsub.Message{
+			Data:       msg,
+			Attributes: attrs,
+		})
+
+		if _, err = res.Get(s.ctx); err != nil {
 			return fmt.Errorf("publish result: %v", err)
 		}
 

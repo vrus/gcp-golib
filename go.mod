@@ -9,6 +9,7 @@ require (
 	cloud.google.com/go/storage v1.30.1
 	firebase.google.com/go/v4 v4.11.0
 	github.com/gomodule/redigo v1.8.9
+	google.golang.org/protobuf v1.30.0
 )
 
 require (
@@ -39,5 +40,4 @@ require (
 	google.golang.org/appengine/v2 v2.0.2 // indirect
 	google.golang.org/genproto v0.0.0-20230403163135-c38d8f061ccd // indirect
 	google.golang.org/grpc v1.54.0 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
 )
