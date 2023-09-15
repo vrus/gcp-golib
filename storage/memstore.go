@@ -142,6 +142,10 @@ func (m *MemStore) GetKey(key string, dest interface{}) error {
 		}
 	}
 
+	if val == nil || len(val) == 0 {
+		return nil
+	}
+
 	return json.Unmarshal(val, dest)
 }
 
