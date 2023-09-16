@@ -14,6 +14,11 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
+const (
+	MaxIdle = 10
+	//MaxActive = 1000
+)
+
 type MemStore struct {
 	pool *redis.Pool
 }
@@ -30,7 +35,9 @@ func NewMemstore(host string, port string, password string) (*MemStore, error) {
 	redisAddr := fmt.Sprintf("%s:%s", host, port)
 
 	redisPool := &redis.Pool{
-		MaxIdle:     3,
+		MaxIdle: MaxIdle,
+		//MaxActive: MaxActive,
+
 		IdleTimeout: 240 * time.Second,
 		// Dial or DialContext must be set. When both are set, DialContext takes precedence over Dial.
 		Dial: func() (redis.Conn, error) {
