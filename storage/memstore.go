@@ -78,10 +78,8 @@ func (m *MemStore) IncrementAndExpire(key string, maxValue int, expiry float64) 
 	tokens, err := redis.Int(conn.Do("GET", key))
 	//log.Printf("Tokens %v", tokens)
 
-	if err != nil {
-		if !errors.Is(err, redis.ErrNil) {
-			log.Printf("failed to retrieve key %v. %v", key, err)
-		}
+	if err != nil && !errors.Is(err, redis.ErrNil) {
+		log.Printf("failed to retrieve key %v. %v", key, err)
 		return 0, false
 	}
 
@@ -123,10 +121,9 @@ func (m *MemStore) GetIntKey(key string) int {
 	defer conn.Close()
 
 	val, err := redis.Int(conn.Do("GET", key))
-	if err != nil {
-		if !errors.Is(err, redis.ErrNil) {
-			log.Printf("failed to get key %v. %v", key, err)
-		}
+
+	if err != nil && !errors.Is(err, redis.ErrNil) {
+		log.Printf("failed to increment key %v. %v", key, err)
 		return -1
 	}
 
@@ -205,10 +202,9 @@ func (m *MemStore) IncrementKey(key string) int {
 
 	value, err := redis.Int(conn.Do("INCR", key))
 	//log.Printf("Value %v", value)
-	if err != nil {
-		if !errors.Is(err, redis.ErrNil) {
-			log.Printf("failed to increment key %v. %v", key, err)
-		}
+
+	if err != nil && !errors.Is(err, redis.ErrNil) {
+		log.Printf("failed to increment key %v. %v", key, err)
 		return -1
 	}
 
